@@ -1,0 +1,275 @@
+/*CREATE TABLE Employee ( 
+
+    EmployeeID INT PRIMARY KEY, 
+
+    Name NVARCHAR(100), 
+
+    Salary DECIMAL(10, 2), 
+
+    DepartmentID INT, 
+
+    HireDate DATE 
+
+); 
+
+ 
+
+INSERT INTO Employee (EmployeeID, Name, Salary, DepartmentID, HireDate) 
+
+VALUES 
+
+(1, 'Alice Johnson', 70000.00, 101, '2015-03-15'), 
+
+(2, 'Bob Smith', 50000.00, 101, '2018-07-21'), 
+
+(3, 'Charlie Brown', 60000.00, 102, '2020-01-10'), 
+
+(4, 'David Wilson', 80000.00, 102, '2016-05-30'), 
+
+(5, 'Eva Davis', 55000.00, 103, '2019-11-05'), 
+
+(6, 'Frank Harris', 65000.00, 103, '2021-08-15'); 
+
+ 
+
+ 
+
+CREATE TABLE Department ( 
+
+    DepartmentID INT PRIMARY KEY, 
+
+    DepartmentName NVARCHAR(100), 
+
+    Budget DECIMAL(10, 2) 
+
+); 
+
+ 
+
+INSERT INTO Department (DepartmentID, DepartmentName, Budget) 
+
+VALUES 
+
+(101, 'HR', 150000.00), 
+
+(102, 'IT', 200000.00), 
+
+(103, 'Marketing', 180000.00);
+
+ 
+
+ 
+
+*******************************************  */
+
+--1) Write a query to flag employees in the Employee table whose Salary is above the average salary of their department as 'Above Average' and others as 'Below Average'. Ensure that the query correctly handles cases where an employee's salary is exactly equal to the department's average salary. 
+select 
+    e.employeeid,
+    e.name,
+    e.salary,
+    case 
+        when e.salary > avg(e.salary) over (partition by e.departmentid) 
+            then 'above average'
+        else 'below average'
+    end as salary_flag
+from employee e;
+
+
+ 
+
+--2) Write a query to categorize each department in the Department table based on its Budget. Use a CASE statement to assign categories 'High Budget', 'Medium Budget', or 'Low Budget' based on the following thresholds: 
+/*
+
+'High Budget' for budgets greater than 180,000 
+
+'Medium Budget' for budgets between 120,000 and 180,000 
+
+'Low Budget' for budgets less than 120,000 
+
+WHILE Loop for Salary Increase: Create a stored procedure that uses a WHILE loop to increase the salary of employees in the Employee table by 5% if their salary is below 60,000. The loop should process employees in batches of 2 at a time. 
+*/
+select
+    departmentid,
+    departmentname,
+    budget,
+    case
+        when budget > 180000 then 'high budget'
+        when budget between 120000 and 180000 then 'medium budget'
+        else 'low budget'
+    end as budget_category
+from department;
+
+create or alter procedure usp_increase_salary_batch
+as
+begin
+    declare @batchsize int = 2;
+
+    while exists (select 1 from employee where salary < 60000)
+    begin
+        update top (@batchsize) employee
+        set salary = salary * 1.05
+        where salary < 60000;
+    end
+end;
+
+
+--3) Write a query to update the Salary of employees in the Employee table who have been hired before 2018. Use IF-ELSE logic to increase their salary by 10% if their current salary is below 60,000, and 5% if it is 60,000 or higher. 
+update employee
+set salary =
+    case
+        when salary < 60000 then salary * 1.10
+        else salary * 1.05
+    end
+where hiredate < '2018-01-01';
+
+
+--4) Write a query to adjust the Budget in the Department table based on a condition. Use a CASE statement to increase the budget by 10% if the current Budget is less than 170,000, otherwise, decrease it by 5%. 
+update department
+set budget =
+    case
+        when budget < 170000 then budget * 1.10
+        else budget * 0.95
+    end;
+ 
+
+--5) Create a stored procedure that uses a WHILE loop to delete departments from the Department table where the Budget is less than 120,000. Process the deletion in batches of 1 department at a time to avoid performance issues. 
+create or alter procedure usp_delete_low_budget_departments
+as
+begin
+    while exists (select 1 from department where budget < 120000)
+    begin
+        delete top (1)
+        from department
+        where budget < 120000;
+    end
+end;
+
+
+ 
+
+--6) Write a query to compare the Budget of each department in the Department table with the average Budget of all departments. Use IF-ELSE logic to return 'Above Average Budget' or 'Below Average Budget' for each department. 
+declare @avg_budget decimal(10,2);
+
+select @avg_budget = avg(budget) from department;
+
+select
+    departmentid,
+    departmentname,
+    budget,
+    case
+        when budget > @avg_budget then 'above average budget'
+        else 'below average budget'
+    end as budget_status
+from department;
+
+
+ 
+
+--7) Write a query to categorize employees in the Employee table based on their Tenure (calculated from the HireDate to the current date). Use a CASE statement to classify them into 'Less than 1 Year', '1 to 3 Years', or 'More than 3 Years'. 
+select
+    employeeid,
+    name,
+    hiredate,
+    case
+        when datediff(year, hiredate, getdate()) < 1 then 'less than 1 year'
+        when datediff(year, hiredate, getdate()) between 1 and 3 then '1 to 3 years'
+        else 'more than 3 years'
+    end as tenure_category
+from employee;
+
+
+ 
+
+--8) Create a stored procedure that uses a WHILE loop to adjust the Budget of each department in the Department table based on the DepartmentName. If the department name contains 'IT', increase the Budget by 15%; otherwise, decrease it by 5%. 
+create or alter procedure usp_adjust_budget_by_department
+as
+begin
+    declare @deptid int;
+
+    while exists (select 1 from department)
+    begin
+        select top 1 @deptid = departmentid from department;
+
+        update department
+        set budget =
+            case
+                when departmentname like '%IT%' then budget * 1.15
+                else budget * 0.95
+            end
+        where departmentid = @deptid;
+
+        delete from department where departmentid = @deptid;
+    end
+end;
+
+
+ 
+
+--9) Write a query to compare the Salary of each employee with the average Salary of employees in the same department. Use IF-ELSE and CASE statements to return 'Above Average' or 'Below Average' along with 'Exceptional' if the salary is in the top 10% of all salaries in the department. 
+with dept_avg as (
+    select 
+        departmentid,
+        avg(salary) as avg_salary
+    from employee
+    group by departmentid
+),
+salary_rank as (
+    select
+        e.*,
+        percent_rank() over (partition by departmentid order by salary desc) as salary_percentile
+    from employee e
+)
+select
+    s.employeeid,
+    s.name,
+    s.salary,
+    case
+        when s.salary > d.avg_salary then 'above average'
+        else 'below average'
+    end as avg_comparison,
+    case
+        when s.salary_percentile <= 0.10 then 'exceptional'
+        else 'normal'
+    end as performance_flag
+from salary_rank s
+join dept_avg d
+on s.departmentid = d.departmentid;
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
