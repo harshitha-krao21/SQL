@@ -1,0 +1,84 @@
+--QUES1:If a table has 1 million Rows and when i wrote a query it is performing very slow even it has indexes on it? how do you improve performance.? 
+/*Even if a table has indexes, a query can be slow if the indexes are not selective, missing required columns, or if the query uses functions on indexed columns. 
+Performance can also degrade due to outdated statistics, fragmentation, or parameter sniffing. To improve performance, I would first analyze the execution 
+plan to see if key lookups or scans are happening, consider creating a covering or filtered index for the query, update statistics, reorganize or rebuild 
+fragmented indexes, and rewrite the query to make it more index-friendly.*/
+
+--QUES2: WHAT IS INDEXES VIEWS.
+/*An indexed view is a view whose result is physically stored on disk in the form of a clustered index. Unlike regular views, the data in an indexed view is 
+materialized, which allows queries that reference the view to retrieve pre-aggregated or pre-joined data efficiently. Indexed views are especially useful for 
+complex aggregations, joins, or computations, but they require WITH SCHEMABINDING and must follow certain restrictions like deterministic functions.*/
+
+--QUES3:What is Column Store Index? Why do we use it? 
+/*A columnstore index stores data column-wise instead of row-wise, which is the opposite of traditional rowstore indexes. 
+This structure allows for high compression and extremely fast performance for analytical queries that scan large datasets, aggregate values, 
+or calculate sums, averages, and counts. Columnstore indexes are ideal for data warehouses, reporting, and scenarios where the workload is 
+read-heavy rather than transactional.*/
+
+--QUES4:Primary key and Clustered Index. 
+/*A primary key enforces uniqueness and does not allow nulls, whereas a clustered index determines the physical order of the data on disk. 
+A table can have only one clustered index, which may or may not be the primary key. The primary key automatically creates a unique index if one does not exist, 
+and while clustered indexes can exist independently of primary keys, the leaf level of a clustered index contains the actual data.*/
+
+--QUES5:What do you mean by covering index? 
+/*A covering index is a non-clustered index that includes all the columns a query needs, so the query can be satisfied entirely from the index without accessing 
+the base table. This reduces I/O and improves performance because SQL Server does not have to perform key lookups to fetch additional columns. Covering indexes 
+are especially effective for frequently executed queries with specific filters or projections.*/
+
+--QUES6:Index scan vs table scan 
+/*An index scan reads all the entries in an index, whereas a table scan reads every row of the table. While an index scan is more efficient than a table scan 
+because the index is smaller than the full table, an index seek is the most efficient operation because it directly locates the rows that match the query condition.*/
+
+--QUES7:Does a physical or logical B-Tree exist for clustered index? 
+/*A clustered index has a physical B-Tree structure because it determines the physical order of data rows on disk. The leaf level of a clustered index contains 
+the actual data pages, whereas non-leaf levels act as a tree structure to quickly navigate to the required data.*/
+
+--QUES8:Types of Indexes? 
+/*SQL Server supports several types of indexes, including clustered, non-clustered, unique, filtered, covering, columnstore, XML, spatial, full-text, 
+and hash indexes for in-memory tables. Each type is designed for different use cases, such as fast lookups, analytical queries, or text searches.*/
+
+--QUES9:How to know which index is running slow 
+/*SQL Server provides dynamic management views like sys.dm_db_index_usage_stats to check how frequently indexes are used. By examining the number of seeks, 
+scans, lookups, and updates, you can identify indexes that are underused or causing performance overhead and decide whether to modify, drop, or rebuild them.*/
+
+--QUES10:Why covering index are better than NCI? 
+/*Covering indexes are more efficient because they include all the columns needed for a query, eliminating the need for key lookups to the base table. In contrast, 
+a regular non-clustered index may only include key columns, forcing SQL Server to perform additional reads to fetch remaining columns, which increases I/O and 
+slows query performance.*/
+
+--QUES11:Have you used filtered Index? 
+/*Filtered indexes allow indexing only a subset of rows that meet a specified condition. They are useful for queries that frequently access a small portion 
+of the table, such as active orders or recent transactions. Filtered indexes are smaller, faster to maintain, and improve query performance by targeting only the relevant rows.*/
+
+--QUES12:What is the good condition to create column store index? 
+/*Columnstore indexes are best suited for very large tables with millions of rows and read-heavy workloads, especially for analytical queries involving aggregations. 
+They are ideal for reporting, data warehouses, and scenarios where performance gains from compression and batch processing outweigh the cost of slower inserts and 
+updates.*/
+
+--QUES13:Asked me experience with indexes and questions on indexes (covering and filtered) and how the indexes work?? 
+/*I have used clustered, non-clustered, covering, and filtered indexes to improve query performance. 
+I usually start by analyzing the execution plan to identify scans and key lookups, then design indexes to match the query patterns. 
+I also optimize index maintenance through rebuilds, statistics updates, and by removing unused indexes. 
+Understanding the underlying B-Tree structure helps in creating efficient indexes.*/
+
+--QUES14:How many Clustered Indexes can you have? 
+/*A table can have only one clustered index because the data can be physically sorted in only one order. Additional indexes must be non-clustered.*/
+
+--QUES15:cluster and non clustered index 
+/*A clustered index stores the data rows physically in order, so range queries are faster, and the leaf level contains the actual data. 
+A non-clustered index stores only key values and pointers to the data rows, allowing multiple non-clustered indexes per table. 
+Non-clustered indexes are suitable for lookup queries, while clustered indexes are ideal for ordered access or range scans.*/
+
+--QUES16:Questions on Indexes, showed a query and indexes on the tables in the query and asked how to improve query performance by modifying indexes. (There are around 10 questions of similar type) 
+/*When a query is slow, I first check the execution plan to see missing or unused indexes. I might add a new index, create a covering index, include 
+additional columns, or add a filtered index. I also consider changing column order in the index keys or dropping unnecessary indexes to reduce maintenance overhead.*/
+
+--QUES17:Difference between clustered and non-clustered indexes? 
+/*A clustered index determines the physical order of the data and stores the actual rows at the leaf level, allowing only one per table. A non-clustered index stores a separate structure with pointers to the rows, allowing multiple indexes per table. Clustered indexes are better for range queries, and non-clustered indexes are better for specific lookups.*/
+
+--QUES18:How do you create clustered index, told to create clustered index on given result set? 
+/*You cannot directly create a clustered index on a result set. Instead, you need to insert the result into a table and then create a clustered index on that table, 
+specifying the column(s) that determine the physical sort order of the data.*/
+
+/*go through all the questions from this link: 
+--https://www.sqlshack.com/top-25-sql-interview-questions-and-answers-about-indexes/ */
