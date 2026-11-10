@@ -1,0 +1,144 @@
+--use adventureworks database, if required, otherwise make logics using variables: 
+
+--"Write a scalar UDF to calculate the age of a customer based on their date of birth." 
+
+create or alter function udf_calculate_age
+(@birthdate date)
+returns int
+as
+begin
+    return datediff(year, @birthdate, getdate())
+           - case 
+                when dateadd(year, datediff(year, @birthdate, getdate()), @birthdate) > getdate() 
+                then 1 else 0 
+             end
+end;
+
+
+--"Create a scalar UDF to convert a given temperature in Celsius to Fahrenheit." 
+create or alter function udf_celsius_to_fahrenheit
+(@celsius float)
+returns float
+as
+begin
+    return (@celsius * 9/5) + 32;
+end;
+
+
+--"Write a scalar UDF to format a given product price as currency." 
+create or alter function udf_format_currency
+(@price money)
+returns varchar(20)
+as
+begin
+    return format(@price, 'C');
+end;
+
+
+--"Create a scalar UDF to calculate the total duration of a specific production operation." 
+create or alter function udf_total_operation_duration
+(@starttime datetime, @endtime datetime)
+returns int
+as
+begin
+    return datediff(minute, @starttime, @endtime);
+end;
+
+
+--"Write a scalar UDF to calculate the total cost of a sales order based on the quantity and unit price." 
+create or alter function udf_total_sales_cost
+(@quantity int, @unitprice money)
+returns money
+as
+begin
+    return @quantity * @unitprice;
+end;
+
+
+--"Write a tabular UDF to retrieve the details of all customers with their contact information." 
+create or alter function udf_customer_contact_details()
+returns table
+as
+return
+(
+    select
+        c.CustomerID,
+        p.FirstName,
+        p.LastName,
+        e.EmailAddress
+    from Sales.Customer c
+    join Person.Person p
+        on c.PersonID = p.BusinessEntityID
+    left join Person.EmailAddress e
+        on p.BusinessEntityID = e.BusinessEntityID
+);
+
+
+--"Create a tabular UDF to calculate the total sales amount for each product category." 
+create or alter function udf_sales_by_category()
+returns table
+as
+return
+(
+    select
+        pc.Name as category_name,
+        sum(sod.LineTotal) as total_sales
+    from Sales.SalesOrderDetail sod
+    join Production.Product p
+        on sod.ProductID = p.ProductID
+    join Production.ProductSubcategory ps
+        on p.ProductSubcategoryID = ps.ProductSubcategoryID
+    join Production.ProductCategory pc
+        on ps.ProductCategoryID = pc.ProductCategoryID
+    group by pc.Name
+);
+
+
+--"Write a tabular UDF to return the top N products by sales quantity."(N is parameter value) 
+create or alter function udf_top_n_products
+(@n int)
+returns table
+as
+return
+(
+    select top (@n)
+        p.Name as product_name,
+        sum(sod.OrderQty) as total_quantity
+    from Sales.SalesOrderDetail sod
+    join Production.Product p
+        on sod.ProductID = p.ProductID
+    group by p.Name
+    order by total_quantity desc
+);
+
+
+--"Create a tabular UDF to calculate the average order value for each customer." 
+create or alter function udf_avg_order_value_per_customer()
+returns table
+as
+return
+(
+    select
+        CustomerID,
+        avg(TotalDue) as avg_order_value
+    from Sales.SalesOrderHeader
+    group by CustomerID
+);
+
+
+--"Write a tabular UDF to retrieve the sales by territory for a specific period."(startdate and enddate will be parameters) 
+create or alter function udf_sales_by_territory
+(@startdate date, @enddate date)
+returns table
+as
+return
+(
+    select
+        st.Name as territory_name,
+        sum(soh.TotalDue) as total_sales
+    from Sales.SalesOrderHeader soh
+    join Sales.SalesTerritory st
+        on soh.TerritoryID = st.TerritoryID
+    where soh.OrderDate between @startdate and @enddate
+    group by st.Name
+);
