@@ -1,0 +1,285 @@
+--1)Retrieve the count of orders placed by each customer, but only include customers with more than 5 orders. 
+--(Sales.SalesOrderHeader) 
+select * from Sales.SalesOrderHeader;
+
+select CustomerID, count(SalesOrderID)
+FROM Sales.SalesOrderHeader
+group by CustomerID
+having count(SalesOrderID) > 5;
+
+--2)Find the average order quantity for each product, but only include products with an average order quantity greater than 10. 
+--(Sales.SalesOrderDetail) 
+select * from Sales.SalesOrderDetail;
+
+SELECT ProductID, avg(OrderQty)
+FROM Sales.SalesOrderDetail
+group by ProductID
+having avg(OrderQty) > 10;
+
+--3)Calculate the total sales amount for each product category, but only include categories with a total sales amount greater than $100,000. 
+--(Sales.SalesOrderDetail, Production.Product, Production.ProductSubcategory, Production.ProductCategory) 
+select * from Sales.SalesOrderDetail;
+select * from Production.Product;
+select * from Production.ProductSubcategory;
+select * from Production.ProductCategory;
+
+SELECT pc.ProductCategoryID,  SUM(ss.Linetotal)
+FROM Production.ProductCategory pc
+inner join Production.ProductSubcategory ps
+on pc.ProductCategoryID = ps.ProductCategoryID
+inner join Production.Product p
+on p.ProductSubcategoryID = ps.ProductSubcategoryID
+inner join Sales.SalesOrderDetail ss
+on ss.ProductID = p.ProductID
+GROUP BY pc.ProductCategoryID
+HAVING SUM(ss.Linetotal) > 100000;
+
+--Production.ProductCategory pc - ProductCategoryID - Production.ProductSubcategory
+--Production.ProductSubcategory - ProductSubcategory - Production.Product
+--Production.Product - ProductID - Sales.SalesOrderDetail
+
+--4)Retrieve the maximum list price for each product subcategory, but only include subcategories with a maximum list price greater than $500. 
+--(Production.Product, Production.ProductSubcategory) 
+
+SELECT ps.Name, MAX(ListPrice)
+FROM Production.Product p
+inner join Production.ProductSubcategory ps
+on ps.ProductSubcategoryID = p.ProductSubcategoryID
+group by ps.Name
+HAVING MAX(ListPrice) > 500;
+
+SELECT ps.ProductSubcategoryID, MAX(ListPrice)
+FROM Production.Product p
+inner join Production.ProductSubcategory ps
+on ps.ProductSubcategoryID = p.ProductSubcategoryID
+group by ps.ProductSubcategoryID
+HAVING MAX(ListPrice) > 500;
+
+--5)Find the minimum order date for each customer, but only include customers who have placed an order before January 1, 2023. 
+--(Sales.SalesOrderHeader) 
+select * from sales.SalesOrderHeader;
+
+SELECT CustomerID, MIN(OrderDate)
+FROM sales.SalesOrderHeader
+where OrderDate < '2023-01-01'
+group by customerID;
+
+--6)Calculate the average unit price for each product color, but only include colors with an average unit price greater than $50. 
+--(Sales.SalesOrderDetail, Production.Product) 
+select TOP 5 * from Sales.SalesOrderDetail;
+select TOP 5 * from Production.Product;
+
+exec sp_help '[AdventureWorks2016].[Sales].[SalesOrderDetail]';
+
+select p.Color, AVG(ss.UnitPrice)
+FROM Sales.SalesOrderDetail ss
+INNER JOIN Production.Product p
+on p.ProductID = ss.ProductID
+group by p.Color
+having avg(ss.unitprice) > 50;
+
+--7)Retrieve the count of employees in each department, but only include departments with more than 10 employees. 
+--(HumanResources.EmployeeDepartmentHistory, HumanResources.Department) 
+
+select TOP 5 * from HumanResources.EmployeeDepartmentHistory;
+select TOP 5 * from HumanResources.Department;
+
+SELECT d.Name, count(distinct h.BusinessEntityID)
+FROM HumanResources.Department d
+inner join HumanResources.EmployeeDepartmentHistory h
+on h.DepartmentID = d.DepartmentID
+group by d.Name
+having count(distinct h.BusinessEntityID)  > 10;
+--8)Find the maximum discount percentage for each product model, but only include models with a maximum discount percentage greater than 20%. 
+--(Sales.SpecialOfferProduct, Production.Product, Production.ProductModel) 
+
+select TOP 5 * from Sales.SpecialOfferProduct;
+select TOP 5 * from Production.Product;
+select TOP 5 * from Production.ProductModel;
+select TOP 5 * from Sales.SpecialOffer;
+
+SELECT pm.ProductModelID, pm.Name AS ProductModelName, MAX(so.DiscountPct * 100) AS MaxDiscountPercentage
+FROM Sales.SpecialOfferProduct sop
+INNER JOIN Sales.SpecialOffer so
+ON sop.SpecialOfferID = so.SpecialOfferID
+INNER JOIN Production.Product p
+ON sop.ProductID = p.ProductID
+INNER JOIN Production.ProductModel pm
+ON p.ProductModelID = pm.ProductModelID
+GROUP BY pm.ProductModelID, pm.Name
+HAVING MAX(so.DiscountPct * 100) > 20;
+
+
+--9)Calculate the total revenue for each sales region, but only include regions with a total revenue greater than $1,000,000. 
+--(Sales.SalesOrderHeader, Sales.SalesTerritory) 
+select top 5 * from Sales.SalesOrderHeader;
+select top 5 * from Sales.SalesTerritory;
+
+
+SELECT st.TerritoryID, SUM(so.SubTotal)
+from Sales.SalesTerritory st
+inner join Sales.SalesOrderHeader so
+on so.TerritoryID = st.TerritoryID
+group by st.TerritoryID
+having SUM(so.SubTotal) > 1000000;
+
+
+--10)Retrieve the average days to deliver orders for each ship method, but only include ship methods with an average delivery time less than 5 days. 
+--(Sales.SalesOrderHeader, Purchasing.ShipMethod) 
+select top 5 * from Sales.SalesOrderHeader;
+select top 5 * from Purchasing.ShipMethod;
+
+
+SELECT sm.Name, AVG(DATEDIFF(Day, so.OrderDate,so.ShipDate))
+FROM Sales.SalesOrderHeader so
+inner join Purchasing.ShipMethod sm
+on sm.ShipMethodID = so.ShipMethodID
+group by sm.Name
+having AVG(DATEDIFF(Day, so.OrderDate,so.ShipDate)) < 5;
+
+--11)Find the minimum list price for each product size, but only include sizes with a minimum list price less than $100. 
+--(Production.Product) 
+
+select top 5 * from Production.Product;
+
+SELECT Size, MIN(ListPrice)
+FROM Production.Product
+group by Size
+having MIN(ListPrice) < 100;
+
+--12)Calculate the total sales amount for each year, but only include years where the total sales amount is greater than $1,000,000. 
+--(Sales.SalesOrderHeader) 
+
+select top 5 * from Sales.SalesOrderHeader;
+
+SELECT YEAR(OrderDate), SUM(SubTotal)
+FROM Sales.SalesOrderHeader
+group by YEAR(OrderDate)
+Having SUM(SubTotal) > 1000000;
+
+
+--13)Retrieve the count of products in each product subcategory, but only include subcategories with more than 20 products. 
+--(Production.Product, Production.ProductSubcategory) 
+
+select top 5 * from Production.Product;
+select top 5 * from Production.ProductSubcategory;
+
+SELECT ps.ProductSubcategoryID, COUNT(p.ProductID)
+FROM Production.Product p
+INNER JOIN Production.ProductSubcategory ps
+ON ps.ProductSubcategoryID = p.ProductSubcategoryID
+GROUP BY ps.ProductSubcategoryID
+HAVING COUNT(p.ProductID) > 20;
+
+--14)Find the average standard cost for each product category, but only include categories with an average standard cost greater than $100. 
+--(Production.Product, Production.ProductSubcategory, Production.ProductCategory) 
+
+select TOP 5 * from Production.Product;
+select TOP 5 * from Production.ProductSubcategory;
+select TOP 5 * from Production.ProductCategory;
+
+SELECT ps.ProductCategoryID, AVG(p.StandardCost)
+FROM Production.Product p
+INNER JOIN Production.ProductSubcategory ps
+on p.ProductSubcategoryID = ps.ProductSubcategoryID
+INNER JOIN Production.ProductCategory pc
+on pc.ProductCategoryID = ps.ProductCategoryID
+GROUP BY ps.ProductCategoryID
+HAVING AVG(p.StandardCost) > 100;
+
+--15)Calculate the total quantity sold for each product color, but only include colors with a total quantity sold greater than 100. 
+--(Sales.SalesOrderDetail, Production.Product) 
+
+select TOP 5 * from Sales.SalesOrderDetail;
+select TOP 5 * from Production.Product;
+
+SELECT p.Color, SUM(OrderQty)
+FROM Sales.SalesOrderDetail so
+INNER JOIN Production.Product p
+ON p.ProductID = so.ProductID
+WHERE p.color is NOT NULL
+GROUP BY p.Color
+HAVING SUM(OrderQty) > 100;
+
+--16)Retrieve the maximum weight for each product subcategory, but only include subcategories with a maximum weight less than 50 pounds. 
+--(Production.Product, Production.ProductSubcategory) 
+
+select top 5 * from Production.Product;
+select top 5 * from Production.ProductSubcategory;
+
+SELECT p.ProductSubcategoryID, ps.Name, MAX(p.Weight)
+FROM Production.Product p
+INNER JOIN Production.ProductSubcategory ps
+ON p.ProductSubcategoryID = ps.ProductSubcategoryID
+WHERE p.Weight is NOT NULL
+GROUP BY p.ProductSubcategoryID, ps.Name
+HAVING MAX(p.Weight) < 50;
+
+
+----17)Find the minimum standard cost for each product model, but only include models with a minimum standard cost less than $50. 
+--(Production.Product, Production.ProductModel) 
+
+SELECT TOP 5 * FROM Production.Product;
+SELECT TOP 5 * FROM Production.ProductModel;
+
+SELECT pm.ProductModelID, pm.Name, MIN(p.StandardCost)
+FROM Production.Product p
+INNER JOIN Production.ProductModel pm
+ON p.ProductModelID = pm.ProductModelID
+GROUP BY pm.ProductModelID, pm.Name
+HAVING MIN(p.StandardCost) < 50;
+
+--18)Calculate the total sales amount for each customer city, but only include cities with a total sales amount greater than $50,000. 
+--(Sales.SalesOrderHeader, Person.Address, Person.BusinessEntityAddress) 
+
+SELECT TOP 5 * FROM Sales.SalesOrderHeader;
+SELECT TOP 5 * FROM Person.Address;
+SELECT TOP 5 * FROM Person.BusinessEntityAddress;
+
+SELECT a.City, SUM(soh.TotalDue) AS TotalSalesAmount
+FROM Sales.SalesOrderHeader soh
+INNER JOIN Person.BusinessEntityAddress bea
+    ON soh.CustomerID = bea.BusinessEntityID
+INNER JOIN Person.Address a
+    ON bea.AddressID = a.AddressID
+GROUP BY a.City
+HAVING SUM(soh.TotalDue) > 50000;
+
+
+--19)Retrieve the count of orders placed in each month, but only include months with more than 100 orders. 
+--(Sales.SalesOrderHeader) 
+SELECT * FROM Sales.SalesOrderHeader;
+SELECT DATENAME(MONTH,OrderDate), COUNT(SalesOrderID)
+--SELECT MONTH(OrderDate), COUNT(SalesOrderID)
+FROM Sales.SalesOrderHeader
+--GROUP BY MONTH(OrderDate)
+GROUP BY DATENAME(MONTH,OrderDate)
+HAVING COUNT(SalesOrderID) > 100
+ORDER BY DATENAME(MONTH,OrderDate) ASC;
+
+
+
+--20)Find the average list price for each product category, but only include categories with an average list price greater than $500. 
+--(Production.Product, Production.ProductSubcategory, Production.ProductCategory) 
+
+SELECT TOP 5 * FROM Production.Product;
+SELECT TOP 5 * FROM Production.ProductSubcategory;
+SELECT TOP 5 * FROM Production.ProductCategory;
+
+SELECT pc.ProductCategoryID, pc.Name, AVG(p.ListPrice)
+FROM Production.Product p
+INNER JOIN Production.ProductSubcategory ps
+ON p.ProductSubcategoryID = ps.ProductSubcategoryID
+INNER JOIN Production.ProductCategory pc
+ON pc.ProductCategoryID = ps.ProductCategoryID
+GROUP BY pc.ProductCategoryID, pc.Name
+HAVING AVG(p.ListPrice) > 500;
+
+
+
+
+
+
+
+
+
