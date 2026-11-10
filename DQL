@@ -1,1 +1,159 @@
 
+CREATE TABLE hospital_billing ( 
+
+    patient_id INT PRIMARY KEY, 
+
+    patient_name NVARCHAR(100), 
+
+    admission_date DATE, 
+
+    discharge_date DATE, 
+
+    total_amount DECIMAL(10, 2), 
+
+    insurance_coverage DECIMAL(10, 2), 
+
+    payment_status NVARCHAR(50), 
+
+    room_type NVARCHAR(50), 
+
+    doctor_name NVARCHAR(100), 
+
+    nurse_name NVARCHAR(100) 
+
+); 
+
+
+
+select * from hospital_billing;
+----------
+--Retrieve the patient_id and patient_name for all records in the hospital billing dataset. 
+select patient_id, patient_name
+from hospital_billing;
+
+--List the patient_id, total_fee, and date_of_admission for patients who have been admitted after '2024-07-15'.
+select patient_id, total_amount, admission_date
+from hospital_billing
+where admission_date > '2024-07-15';
+
+--Display the patient_id, patient_name, and doctor's_name for patients who have 'Dr. Wilson' as their doctor.
+select patient_id, patient_name, doctor_name
+from hospital_billing
+where doctor_name = 'Dr. Wilson';
+
+----Find the patient_id and total_fee for patients whose total_fee is greater than $7000.
+select patient_id, total_amount
+from hospital_billing
+where total_amount > 7000;
+
+-----Show the patient_id, patient_name, and nurse_name for patients who have 'Nurse Miller' as their nurse.
+select patient_id, patient_name, nurse_name
+from hospital_billing
+--where nurse_name like 'Nurse Miller';
+where nurse_name like '%Miller';
+
+-----List the patient_id, total_fee, and date_of_admission for patients admitted between '2024-07-20' and '2024-08-20'.
+select patient_id, total_amount, admission_date
+from hospital_billing
+where admission_date between '2024-07-20' and '2024-08-20';
+
+--------------Display the patient_id, patient_name, and total_fee for patients with 'Paid' status.
+select patient_id, patient_name, total_amount
+from hospital_billing
+where payment_status = 'Paid';
+
+
+----------- *Retrieve the patient_id, patient_name, and medicenes_list for patients with 'Unpaid' status.
+select patient_id, patient_name, total_amount
+from hospital_billing
+where payment_status = 'UnPaid';
+
+-----Show the patient_id, patient_name, and nurse_name for patients who have 'Nurse Perez' as their nurse and 'Dr. Adams' as their doctor.
+select patient_id, patient_name, nurse_name
+from hospital_billing
+where nurse_name = 'Nurse Perez' and doctor_name = 'Dr. Adams';
+
+
+------Find the patient_id and total_fee for patients who have 'General' as their room type.
+
+select patient_id, total_amount
+from hospital_billing
+where room_type = 'General';
+
+----------------Display the patient_id, patient_name, and doctor's_name for patients who have a total_fee between $4000 and $6000.
+select patient_id, patient_name, doctor_name
+from hospital_billing
+where total_amount between 4000 and 6000;
+
+-----List the patient_id, total_fee, and date_of_admission for patients who were admitted before '2024-07-10'
+select patient_id, total_amount, admission_date
+from hospital_billing
+where admission_date < '2024-07-10';
+
+
+
+----------Show the patient_id, patient_name, and nurse_name for patients with 'Semi-Private' room type.
+select patient_id, total_amount, nurse_name
+from hospital_billing
+--where room_type like 'Semi%';
+where room_type = 'Semi-Private';
+
+
+----Retrieve the patient_id, total_fee, and date_of_admission for patients whose total_fee is less than $5000.
+
+select patient_id, total_amount, admission_date
+from hospital_billing
+where total_amount < 5000;
+
+
+
+
+
+---- Display the patient_id, patient_name, and total_fee for patients with 'Private' room type.
+select patient_id, patient_name, total_amount
+from hospital_billing
+where room_type = 'Private';
+
+-----Find the patient_id and total_fee for patients who have 'Paid' status and a total_fee greater than $6000.
+select patient_id, total_amount
+from hospital_billing
+where payment_status = 'Paid' and total_amount > 6000;
+-----
+
+----Show the patient_id, patient_name, and nurse_name for patients who have 'Nurse Wilson' as their nurse and 'Dr. Perez' as their doctor.
+select patient_id, patient_name, nurse_name
+from hospital_billing
+where nurse_name = 'Nurse Wilson' and doctor_name = 'Dr. Perez';
+
+----List the patient_id, total_fee, and date_of_admission for patients who were admitted after '2024-08-20'.
+select patient_id, total_amount, admission_date
+from hospital_billing
+where admission_date > '2024-08-20';
+
+----Display the patient_id, patient_name, and doctor's_name for patients with 'Unpaid' status and a total_fee less than $4000.
+select patient_id, patient_name, doctor_name
+from hospital_billing
+where total_amount < 4000 and payment_status = 'Unpaid';
+
+---------
+--Retrieve the patient_id, patient_name, and nurse_name for patients who have 'Nurse Perez' as their nurse and a total_fee greater than $5000.
+select patient_id, patient_name, nurse_name
+from hospital_billing
+where nurse_name = 'Nurse Perez' and total_amount > 5000;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
