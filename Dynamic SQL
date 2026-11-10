@@ -1,0 +1,163 @@
+--Dynamic Sql 
+/*
+Ques1: Write the string for: 
+
+Get me the full name of employees who are in organization for greater then 5 years 
+
+Give me the employee name and job title who have job titles like %manager%. 
+
+Give the salesperson names and there total  dues. 
+
+Find the territory name and its total  due for name=�northwest� 
+
+Give me the result for the territories and its total_dues */
+
+--Get me the full name of employees who are in organization for greater then 5 years 
+DECLARE @sql NVARCHAR(MAX);
+SET @sql = 'SELECT p.FirstName + '' '' + p.LastName AS FullName
+FROM HumanResources.Employee e
+JOIN Person.Person p
+ON e.BusinessEntityID = p.BusinessEntityID
+WHERE DATEDIFF(YEAR, e.HireDate, GETDATE()) > 5
+';
+
+--Give me the employee name and job title who have job titles like %manager%. 
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT p.FirstName + '' '' + p.LastName AS EmployeeName,
+       e.JobTitle
+FROM HumanResources.Employee e
+JOIN Person.Person p
+    ON e.BusinessEntityID = p.BusinessEntityID
+WHERE e.JobTitle LIKE ''%manager%''';
+
+--Give the salesperson names and there total  dues. 
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT p.FirstName + '' '' + p.LastName AS SalesPerson,
+       SUM(soh.TotalDue) AS TotalDue
+FROM Sales.SalesOrderHeader soh
+JOIN Sales.SalesPerson sp
+    ON soh.SalesPersonID = sp.BusinessEntityID
+JOIN Person.Person p
+    ON sp.BusinessEntityID = p.BusinessEntityID
+GROUP BY p.FirstName, p.LastName';
+
+--Find the territory name and its total  due for name=�northwest� 
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT st.Name AS TerritoryName,SUM(soh.TotalDue) AS TotalDue
+FROM Sales.SalesOrderHeader soh
+JOIN Sales.SalesTerritory st
+ON soh.TerritoryID = st.TerritoryID
+WHERE st.Name = ''Northwest''
+GROUP BY st.Name';
+
+--Give me the result for the territories and its total_dues
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT st.Name AS TerritoryName,
+       SUM(soh.TotalDue) AS TotalDue
+FROM Sales.SalesOrderHeader soh
+JOIN Sales.SalesTerritory st
+ON soh.TerritoryID = st.TerritoryID
+GROUP BY st.Name';
+
+--Ques2: declare variables for input parameter 
+--give the full name job title for top1 employee with (vacationhours-sickleavehours) as minimum. 
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT TOP 1
+       p.FirstName + '' '' + p.LastName AS FullName,
+       e.JobTitle,
+       (e.VacationHours - e.SickLeaveHours) AS Balance
+FROM HumanResources.Employee e
+JOIN Person.Person p
+    ON e.BusinessEntityID = p.BusinessEntityID
+ORDER BY (e.VacationHours - e.SickLeaveHours)';
+
+EXEC sp_executesql @sql;
+
+
+--Give the report for max totaldue in territory=�southwest� 
+DECLARE @TerritoryName NVARCHAR(50) = 'Southwest';
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT MAX(soh.TotalDue) AS MaxTotalDue
+FROM Sales.SalesOrderHeader soh
+JOIN Sales.SalesTerritory st
+    ON soh.TerritoryID = st.TerritoryID
+WHERE st.Name = @Territory';
+
+EXEC sp_executesql 
+     @sql,
+     N'@Territory NVARCHAR(50)',
+     @Territory;
+
+
+--Find 2nd highest territory where saleslastyear is greater than salesytd 
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT TerritoryName
+FROM (
+    SELECT Name AS TerritoryName,
+           DENSE_RANK() OVER (ORDER BY SalesLastYear DESC) AS rnk
+    FROM Sales.SalesTerritory
+    WHERE SalesLastYear > SalesYTD
+) t
+WHERE rnk = 2';
+
+EXEC sp_executesql @sql;
+
+
+--Find the group totalsales for north America 
+DECLARE @GroupName NVARCHAR(50) = 'North America';
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT SUM(SalesYTD) AS TotalSales
+FROM Sales.SalesTerritory
+WHERE [Group] = @Grp
+';
+
+EXEC sp_executesql
+     @sql,
+     N'@Grp NVARCHAR(50)',
+     @GroupName;
+
+
+--Give the ranks for the salesytd on group basis from sales.salesteritory 
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT Name,
+       [Group],
+       SalesYTD,
+       RANK() OVER (PARTITION BY [Group] ORDER BY SalesYTD DESC) AS SalesRank
+FROM Sales.SalesTerritory';
+
+EXEC sp_executesql @sql;
+
+
+--give the employee name where length is greater then 10 
+DECLARE @sql NVARCHAR(MAX);
+
+SET @sql = '
+SELECT FirstName, LastName
+FROM Person.Person
+WHERE LEN(FirstName + LastName) > 10';
+
+EXEC sp_executesql @sql;
+
+
+
+
+
+
