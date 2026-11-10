@@ -1,0 +1,100 @@
+--table variable 
+
+--1) declare table variable and insert all records from humanresources.employee table,  
+--a)delete odd records 
+--b)update even records jobtitle to 'manager. 
+DECLARE @EmployeeTable TABLE
+(
+    RowNum INT,
+    NationalIDNumber NVARCHAR(15),
+    BusinessEntityID INT,
+    LoginID NVARCHAR(256),
+    OrganizationNode HIERARCHYID,
+    OrganizationLevel SMALLINT,
+    JobTitle NVARCHAR(50),
+    BirthDate DATE,
+    MaritalStatus NCHAR(1),
+    Gender NCHAR(1),
+    HireDate DATE,
+    SalariedFlag BIT,
+    VacationHours SMALLINT,
+    SickLeaveHours SMALLINT,
+    CurrentFlag BIT
+);
+
+INSERT INTO @EmployeeTable
+SELECT
+    ROW_NUMBER() OVER (ORDER BY BusinessEntityID) AS RowNum,
+    NationalIDNumber,
+    BusinessEntityID,
+    LoginID,
+    OrganizationNode,
+    OrganizationLevel,
+    JobTitle,
+    BirthDate,
+    MaritalStatus,
+    Gender,
+    HireDate,
+    SalariedFlag,
+    VacationHours,
+    SickLeaveHours,
+    CurrentFlag
+FROM HumanResources.Employee;
+
+--a)delete odd records 
+
+DELETE
+FROM @EmployeeTable
+WHERE RowNum % 2 = 1;
+
+--b)update even records jobtitle to 'manager. 
+UPDATE @EmployeeTable
+SET JobTitle = 'Manager'
+WHERE RowNum % 2 = 0;
+ 
+
+--2)declare table variable and  
+--a) add constraint pk key on eid column,unique on name column,check on salary columnn that non negative or zero salary can be inserted 
+DECLARE @EmpTable TABLE
+(eid INT PRIMARY KEY,         
+name VARCHAR(50) UNIQUE,     
+salary DECIMAL(10,2) CHECK (salary > 0));
+
+
+--b)insert data from emp table  
+INSERT INTO @EmpTable
+SELECT eid, name, salary
+FROM emp;
+
+
+--3) check the memory used in the table variable 
+--use these commands: 
+--DECLARE @ExperiementTable TABLE 
+--(TestColumn_1 INT, TestColumn_2 VARCHAR(40), TestColumn_3 VARCHAR(40)); 
+--SELECT TABLE_CATALOG, TABLE_SCHEMA, COLUMN_NAME, DATA_TYPE 
+--FROM tempdb.INFORMATION_SCHEMA.COLUMNS 
+--WHERE COLUMN_NAME LIKE 'TestColumn%'; 
+
+--GO 
+--SELECT TABLE_CATALOG, TABLE_SCHEMA, COLUMN_NAME, DATA_TYPE 
+--FROM tempdb.INFORMATION_SCHEMA.COLUMNS 
+--WHERE COLUMN_NAME LIKE 'TestColumn%'; 
+
+DECLARE @ExperiementTable TABLE
+(
+    TestColumn_1 INT,
+    TestColumn_2 VARCHAR(40),
+    TestColumn_3 VARCHAR(40)
+);
+
+SELECT TABLE_CATALOG, TABLE_SCHEMA, COLUMN_NAME, DATA_TYPE
+FROM tempdb.INFORMATION_SCHEMA.COLUMNS
+WHERE COLUMN_NAME LIKE 'TestColumn%';
+GO
+SELECT TABLE_CATALOG, TABLE_SCHEMA, COLUMN_NAME, DATA_TYPE
+FROM tempdb.INFORMATION_SCHEMA.COLUMNS
+WHERE COLUMN_NAME LIKE 'TestColumn%';
+
+--The table variable�s metadata exists in tempdb
+--That means SQL Server allocates memory/pages in tempdb for it
+--This indirectly proves memory usage happens via tempdb
