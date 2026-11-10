@@ -1,0 +1,217 @@
+/*
+Assignment on Stored Procedure 
+
+Scenario : 
+Write a stored procedure usp_GenerateSalesReport to dynamically generate sales reports from Orders, OrderDetails, Products, and Customers tables. 
+
+The procedure should accept: 
+
+@City (nullable) – to filter by customer city 
+
+@ProductName (nullable) – to filter by product 
+
+@SortBy – name of the column to sort the data by (e.g., OrderDate, CustomerName, ProductName) 
+
+@SortDirection – 'ASC' or 'DESC' 
+
+Return the full result set with optional filters and sorting applied. 
+*/
+ create or alter procedure usp_generatesalesreport
+(
+    @city nvarchar(100) = null,
+    @productname nvarchar(100) = null,
+    @sortby nvarchar(50),
+    @sortdirection nvarchar(4)
+)
+as
+begin
+    declare @sql nvarchar(max)
+
+    set @sql = '
+    select 
+        o.orderid,
+        o.orderdate,
+        c.customername,
+        c.city,
+        p.productname,
+        od.quantity,
+        od.unitprice,
+        od.quantity * od.unitprice as totalsales
+    from orders o
+    join customers c on o.customerid = c.customerid
+    join orderdetails od on o.orderid = od.orderid
+    join products p on od.productid = p.productid
+    where 1 = 1 '
+
+    if @city is not null
+        set @sql += ' and c.city = @city '
+
+    if @productname is not null
+        set @sql += ' and p.productname = @productname '
+
+    set @sql += ' order by ' + quotename(@sortby) + ' ' + @sortdirection
+
+    exec sp_executesql 
+        @sql,
+        n'@city nvarchar(100), @productname nvarchar(100)',
+        @city,
+        @productname
+end
+
+
+/*Scenario: 
+
+Create a stored procedure usp_MonthlyProductSalesSummary that generates a monthly summary of product sales using: 
+
+A table variable to hold filtered sales data. 
+
+A temporary table to hold the monthly summary report. 
+
+Aggregate functions and JOINs to show product-wise and category-wise total sales for a specified month. 
+
+🔧 Procedure Parameters: 
+
+@Month INT (e.g., 1 for January) 
+
+@Year INT 
+
+@CategoryName NVARCHAR(100) (optional filter) */
+create or alter procedure usp_monthlyproductsalessummary
+(
+    @month int,
+    @year int,
+    @categoryname nvarchar(100) = null
+)
+as
+begin
+    declare @filtereddata table
+    (
+        productid int,
+        productname nvarchar(100),
+        categoryname nvarchar(100),
+        salesamount decimal(18,2)
+    )
+
+    insert into @filtereddata
+    select 
+        p.productid,
+        p.productname,
+        c.categoryname,
+        od.quantity * od.unitprice
+    from orders o
+    join orderdetails od on o.orderid = od.orderid
+    join products p on od.productid = p.productid
+    join categories c on p.categoryid = c.categoryid
+    where month(o.orderdate) = @month
+      and year(o.orderdate) = @year
+      and (@categoryname is null or c.categoryname = @categoryname)
+
+    create table #monthlysummary
+    (
+        productname nvarchar(100),
+        categoryname nvarchar(100),
+        totalsales decimal(18,2)
+    )
+
+    insert into #monthlysummary
+    select 
+        productname,
+        categoryname,
+        sum(salesamount)
+    from @filtereddata
+    group by productname, categoryname
+
+    select * from #monthlysummary
+
+    drop table #monthlysummary
+end
+
+ 
+
+/*Scenario: 
+
+Create a stored procedure usp_RegionWiseSalesPerformance that generates region-wise performance data for salespersons in a given quarter. It must use: 
+
+A CTE to calculate total quarterly sales for each salesperson. 
+
+A temporary table to prepare a formatted report. 
+
+Optional filters: 
+
+@RegionName (nullable) 
+
+@MinSalesAmount (nullable) 
+
+@Quarter INT, @Year INT (required) */
+
+ create or alter procedure usp_regionwisesalesperformance
+(
+    @regionname nvarchar(100) = null,
+    @minsaledamount decimal(18,2) = null,
+    @quarter int,
+    @year int
+)
+as
+begin
+    with cte_quarterlysales as
+    (
+        select 
+            s.salespersonid,
+            s.salespersonname,
+            r.regionname,
+            sum(o.totalamount) as totalsales
+        from orders o
+        join salespersons s on o.salespersonid = s.salespersonid
+        join regions r on s.regionid = r.regionid
+        where datepart(quarter, o.orderdate) = @quarter
+          and year(o.orderdate) = @year
+        group by s.salespersonid, s.salespersonname, r.regionname
+    )
+    select *
+    into #regionreport
+    from cte_quarterlysales
+    where (@regionname is null or regionname = @regionname)
+      and (@minsaledamount is null or totalsales >= @minsaledamount)
+
+    select * from #regionreport
+
+    drop table #regionreport
+end
+
+
+/*Scenario: 
+
+You are asked to create a stored procedure named usp_CustomerPurchaseInsights to generate a detailed customer insights report using: 
+
+A base Customers and Orders table 
+
+A view that joins customer and order data 
+
+A scalar UDF that calculates customer loyalty level 
+
+The stored procedure will: 
+
+Accept a date range 
+
+Return customer data, total purchases, last order date, and loyalty level */
+
+create or alter procedure usp_customerpurchaseinsights
+(
+    @startdate date,
+    @enddate date
+)
+as
+begin
+    select 
+        customerid,
+        customername,
+        sum(totalamount) as totalpurchase,
+        max(orderdate) as lastorderdate,
+        dbo.udf_customerloyalty(sum(totalamount)) as loyaltylevel
+    from vw_customerorders
+    where orderdate between @startdate and @enddate
+    group by customerid, customername
+end
+
+
+ 
