@@ -1,0 +1,144 @@
+--ASSIGNMENT CTE 
+--1: Calculating the Factorial of a Given Number Using Recursive CTE 
+DECLARE @Num INT = 5;
+
+WITH FactorialCTE AS (
+    -- Anchor
+    SELECT 
+        1 AS n,
+        1 AS factorial
+    UNION ALL
+    -- Recursive
+    SELECT 
+        n + 1,
+        factorial * (n + 1)
+    FROM FactorialCTE
+    WHERE n < @Num
+)
+SELECT factorial AS Result
+FROM FactorialCTE
+WHERE n = @Num;
+
+
+ --2: Hierarchical Data Structure:  use recursive CTE to extract all employees under a particular manager. 
+CREATE TABLE Employees (
+    EmpID INT,
+    EmpName VARCHAR(50),
+    ManagerID INT
+);
+
+INSERT INTO Employees VALUES
+(1, 'CEO', NULL),
+(2, 'Manager A', 1),
+(3, 'Manager B', 1),
+(4, 'Employee A1', 2),
+(5, 'Employee A2', 2),
+(6, 'Employee B1', 3);
+
+WITH EmpHierarchy AS (
+    -- Anchor (Manager)
+    SELECT 
+        EmpID,
+        EmpName,
+        ManagerID,
+        0 AS Level
+    FROM Employees
+    WHERE EmpID = 2
+
+    UNION ALL
+
+    -- Recursive (Subordinates)
+    SELECT 
+        e.EmpID,
+        e.EmpName,
+        e.ManagerID,
+        h.Level + 1
+    FROM Employees e
+    JOIN EmpHierarchy h
+        ON e.ManagerID = h.EmpID
+)
+SELECT *
+FROM EmpHierarchy;
+
+
+ --3: File Directory Structure: use recursive CTEs to retrieve all files from the directory and their respective paths. 
+CREATE TABLE FileSystem (
+    FileID INT,
+    FileName VARCHAR(50),
+    ParentID INT
+);
+
+INSERT INTO FileSystem VALUES
+(1, 'Root', NULL),
+(2, 'FolderA', 1),
+(3, 'FolderB', 1),
+(4, 'File1.txt', 2),
+(5, 'File2.txt', 3),
+(6, 'SubFolderA1', 2),
+(7, 'File3.txt', 6);
+
+
+WITH FilePathCTE AS (
+    -- Anchor
+    SELECT 
+        FileID,
+        FileName,
+        ParentID,
+        CAST(FileName AS VARCHAR(500)) AS FullPath
+    FROM FileSystem
+    WHERE ParentID IS NULL
+
+    UNION ALL
+
+    -- Recursive
+    SELECT 
+        f.FileID,
+        f.FileName,
+        f.ParentID,
+        CAST(fp.FullPath + '\' + f.FileName AS VARCHAR(500))
+    FROM FileSystem f
+    JOIN FilePathCTE fp
+        ON f.ParentID = fp.FileID
+)
+SELECT *
+FROM FilePathCTE;
+
+
+ --4: Graph Structure: Suppose we have a table called ‘network_topology’ that depicts the relationships between various nodes within the network. Each row in the table corresponds to an edge connecting two nodes. The table comprises two columns: ‘source_node’ and ‘target_node’, which signify the origin and destination nodes of each connection: recursive CTE, the code traverses the network topology . 
+
+CREATE TABLE network_topology (
+    source_node VARCHAR(10),
+    target_node VARCHAR(10)
+);
+
+
+INSERT INTO network_topology VALUES
+('A', 'B'),
+('B', 'C'),
+('C', 'D'),
+('B', 'E'),
+('E', 'F');
+
+
+WITH NetworkCTE AS (
+    -- Anchor
+    SELECT 
+        source_node,
+        target_node,
+        CAST(source_node + '->' + target_node AS VARCHAR(200)) AS Path
+    FROM network_topology
+    WHERE source_node = 'A'
+
+    UNION ALL
+
+    -- Recursive
+    SELECT 
+        nt.source_node,
+        nt.target_node,
+        CAST(n.Path + '->' + nt.target_node AS VARCHAR(200))
+    FROM network_topology nt
+    JOIN NetworkCTE n
+        ON nt.source_node = n.target_node
+)
+SELECT *
+FROM NetworkCTE;
