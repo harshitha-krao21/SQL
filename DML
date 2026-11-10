@@ -1,1 +1,111 @@
 
+select * from categories
+
+-- Create the categories table
+CREATE TABLE categories (
+    category_id INT,
+    category_name VARCHAR(100)
+);
+
+-- Insert all records
+INSERT INTO categories (category_id, category_name) VALUES
+(25, 'Deli'),
+(50, 'Produce'),
+(75, 'Bakery'),
+(100, 'General Merchandise'),
+(125, 'Technology');
+
+INSERT INTO categories (category_id, category_name)
+VALUES (150, 'Miscellaneous');
+
+DELETE FROM categories
+WHERE category_id < 100;
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+select * from employees
+--1. Create employees table
+CREATE TABLE employees (
+    employee_number INT,
+    last_name VARCHAR(50),
+    first_name VARCHAR(50),
+    salary DECIMAL(10, 2),
+    dept_id INT
+);
+--2. Insert all records
+INSERT INTO employees (employee_number, last_name, first_name, salary, dept_id) VALUES
+(1001, 'Smith', 'John', 62000.00, 500),
+(1002, 'Anderson', 'Jane', 57500.00, 500),
+(1003, 'Everest', 'Brad', 71000.00, 501),
+(1004, 'Horvath', 'Jack', 42000.00, 501);
+
+--3. Insert two new records
+INSERT INTO employees (employee_number, first_name, salary) VALUES
+(1005, 'Mary', 47500.00);
+
+INSERT INTO employees (employee_number, last_name, salary) VALUES
+(1006, 'William', 32000.00);
+
+-- OR as a single statement with all columns (though values will be NULL for missing fields)
+INSERT INTO employees (employee_number, last_name, first_name, salary, dept_id) VALUES
+(1005, NULL, 'Mary', 47500.00, NULL),
+(1006, 'William', NULL, 32000.00, NULL);
+
+--4. Update all salaries by 20 percent
+UPDATE employees
+SET salary = salary * 1.20;
+
+--5. Delete all records for dept_id of 501
+DELETE FROM employees
+WHERE dept_id = 501;
+
+
+SELECT DISTINCT employee_number, last_name, first_name, salary, dept_id
+FROM employees;
+
+
+----------------------------------------------------------------------------------------------------------------------------
+
+--1. Create and insert all records
+
+select * from suppliers
+-- Create suppliers table
+CREATE TABLE suppliers (
+    supplier_id INT,
+    supplier_name VARCHAR(100),
+    city VARCHAR(100),
+    state VARCHAR(100)
+);
+
+-- Insert all records
+INSERT INTO suppliers (supplier_id, supplier_name, city, state) VALUES
+(100, 'Microsoft', 'Redmond', 'Washington'),
+(200, 'Google', 'Mountain View', 'California'),
+(300, 'Oracle', 'Redwood City', 'California'),
+(400, 'Kimberly-Clark', 'Irving', 'Texas'),
+(500, 'Tyson Foods', 'Springdale', 'Arkansas'),
+(600, 'SC Johnson', 'Racine', 'Wisconsin'),
+(700, 'Dole Food Company', 'Westlake Village', 'California'),
+(800, 'Flowers Foods', 'Thomasville', 'Georgia'),
+(900, 'Electronic Arts', 'Redwood City', 'California');
+
+--2. Delete record where state = 'California' and supplier_name = 'Google'
+
+DELETE FROM suppliers
+WHERE state = 'California' AND supplier_name = 'Google';
+
+--3. Delete records where state = 'California' and supplier_name in ('Google', 'Oracle')
+
+DELETE FROM suppliers
+WHERE state = 'California' AND supplier_name IN ('Google', 'Oracle');
+
+--4. Delete record where supplier_name = 'Microsoft'
+
+DELETE FROM suppliers
+WHERE supplier_name = 'Microsoft';
+
+--5. Delete records where state = 'California'
+
+DELETE FROM suppliers
+WHERE state = 'California';
