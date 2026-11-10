@@ -1,0 +1,571 @@
+Tax Calculation (Finance Scenario)
+
+Business Scenario
+
+A finance system calculates income tax for employees.
+
+Tax rules:
+
+Salary ≤ 5,00,000 → 0% tax
+Salary between 5,00,001 and 10,00,000 → 10%
+Salary > 10,00,000 → 20%
+
+Create a UDF that returns the tax amount based on salary.
+--------
+
+create function dbo.scalar(@salary int)
+returns int
+as
+begin
+declare @tax int
+if @salary <= 500000
+set @tax = 0
+
+else if @salary between 500001 and 1000000
+set @tax = @salary * 0.10
+
+else
+set @tax = @salary * 0.20
+
+return @tax
+end
+-
+
+
+Business Scenario
+
+Sales management wants:
+
+Orders above a certain amount
+Only from active regions
+ 
+Create an TVF that returns high-value orders.
+ 
+Input- amount above which we want orders
+
+Orders-orderid, custid, amount
+
+Take region as input also
+
+inventory
+(region, orderinfo, inventorydetails)
+---------------------------------------
+
+
+create function dbo.sales(@amount int, @region varchar(30))
+returns @res table(orderid int, custid int, amount int,region varchar(30))
+as
+begin
+insert into @res
+select o.orderid, o.custid, o.amount, i.region
+from orders o
+join inventory i
+on i.orderid = o.orderid
+where o.amount >= @amount and i.region = @region
+return
+end
+
+select * from sales(10,'active')
+------
+create function sales((@amount int, @region varchar(30)))
+returns int, varchar(30)
+as
+return
+insert into @res(o.orderid, o.custid, o.amount, i.region)
+select o.orderid, o.custid, o.amount, i.region
+from orders o
+join inventory i
+on i.orderid = o.orderid
+where o.amount >= @amount and i.region = @region
+Business Scenario
+Sales management wants:
+
+Orders above a certain amount
+Only from active regions
+Used in:
+Dashboards
+Monthly reports
+Incentive calculations
+ 
+Create an TVF that returns high-value orders.
+ 
+Input- amount above which we want orders
+
+Orders-orderid, custid, amount
+-------
+create function dbo.fn_high_value_orders
+(
+    @minamount decimal(10,2)
+)
+returns table
+as
+return
+(
+    select
+        o.orderid,
+        o.custid,
+        o.amount,
+        o.region
+    from orders o
+    join regions r
+        on o.region = r.region
+    where
+        o.amount > @minamount
+        and r.region_status = 'active'
+);
+
+Attendance Summary (HR Scenario)
+Business Scenario
+
+HR needs:
+Monthly attendance summary
+
+Total working days
+Present days
+Absent days
+ 
+Create a TVF to return attendance summary.
+ 
+Input- empid, month, year
+
+Table-Attendance-  empid, attendancedate, status
+---------
+create function attendance(@empid int, @month int, @year int)
+returns @res table(totalworkingdays int, presentdays int, absentdays int)
+as
+begin
+insert into @res
+
+select count(attendancedate) as totalworkingdays, 
+count(case when status = 'present' then 1 else 0) as presentdays,
+count(case when status = 'absent' then 1 else 0) as absentdays
+from attendance
+where empid = @eid and month(attendancedate) = @month and year(attendancedate) = @year
+
+
+
+return
+end
+
+select * from attendance(1,12,2025)
+--------
+create function attendance(@empid int, @month month, @year year)
+returns table
+as
+return
+select count(attendancedate) as totalworkingdays, 
+count(case when status = 'present' then 1 else 0) as presentdays,
+count(case when status = 'absent' then 1 else 0) as absentdays
+
+from attendance
+where empid = @empid and
+attendancedate >= datefromparts(@year,@month,1) and attendancedate <= dateadd(month, 1, datefromparts(@year,@month,1))
+
+
+end
+
+select * from attendance(1,12,2025)
+
+Business Scenario (Very Common)
+An HR system sends a list of employees for a specific payroll run.
+
+Business rules say:
+
+Only employees with salary ≥ X
+And belonging to eligible departments
+Should be considered for bonus calculation
+
+Instead of hardcoding logic or re-querying tables multiple times, we:
+Pass the employee list as a table
+Apply reusable business logic in a UDF
+Get a filtered table back
+
+employee (empid, ename, edpt, salary)
+need an output - eid, Ename, Esal, bonus 
+pass salary and bonus as well as input
+-------------------------------------------
+
+create function bonus(@salary int, @bonus int)
+returns @res table(eid int, ename varchar(50), salary int, bonus int)
+as
+begin
+insert into @res
+select eid, ename, dept, salary, @bonus as bonus
+from employee
+where salary >= @salary and dept = 'Eligible'
+return
+end
+
+select * from bonus(1000,400)
+------------
+create function bonus(@salary int, @bonus int)
+returns table
+as
+return
+select eid, ename, dept, salary, @bonus as bonus
+from employee
+where salary >= @salary and dept = 'Eligible'
+end
+
+select * from bonus(1000,400)
+---------------
+passing input as a table
+
+create type emplist as table(eid int, ename varchar(50), dept varchar(10),salary int)
+
+create function bonus(@emplist emplist readonly,  @salary int, @bonus int)
+returns @res table(eid int, ename varchar(50), salary int, bonus int)
+as
+begin
+insert into @res
+select eid, ename, dept, salary, @bonus as bonus
+from employee
+where salary >= @salary and dept = 'Eligible'
+return
+end
+
+select * from bonus(1000,400)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Business Scenario
+An application search screen allows filtering by:
+
+Employee Name (optional)
+Department (optional)
+Salary range (optional)
+
+All filters are dynamic.
+
+Question
+Write a stored procedure  for flexible searching.
+
+table employee(empid, ename, dept, salary)
+----------
+create procedure emp
+(@ename varchar(50), @dept varchar(50), @minsalary decimal(5,2), @maxsalary decimal(8,2))
+as
+begin
+    set nocount on;
+select empid, ename, dept, salary
+from employee
+where (@ename is null or ename like '%' + @ename + '%')
+and (@dept is null or dept = @dept)
+and (@minsalary is null or salary >= @minsalary)
+and (@maxsalary is null or salary <= @maxsalary)
+order by ename;
+end;
+
+---------change in question - give only empid, ename as input param, get all details of emp---------
+create procedure emp(@eid it, ename varchar(20))
+as 
+begin
+select * from emp
+where eid = @eid and ename like '%'+ename+'%'
+end;
+
+exec emp(1,'Har')
+----using dynamic sql------
+create procedure emp(
+declare @eid nvarchar(50)
+declare @ename nvarchar(50)
+as
+begin
+declare @cmd varchar(50)=
+'select *
+from emp
+where eid =@eid and ename like''+%''+@ename+''%'')'
+
+print @cmd
+
+exec sp_executesql @cmd, N'@eid nvarchar(50)', N'@ename nvarchar(50)',@eid,@ename
+
+exec emp 1,'Har'
+-----------
+sql attack:
+
+exec emp select * from emp where 1=1 ,
+
+
+
+
+
+
+Business Scenario
+
+Bank system transfers money:
+
+Debit one account
+Credit another
+Must handle failures safely
+
+--ensure atomicity
+--accid, name, balance
+--------------------------------------------------------
+
+
+
+create proc bank(@fromacctid int, @toacctid int, @amt int)
+as
+begin
+
+set nocount on;
+begin try
+begin transaction
+
+update accounts
+set balance = balance - @amt
+where accid = @fromacctid and balance > @amt
+
+if @@rowcount = 0
+begin
+throw '50001,'Debit Failed',1'
+end
+
+update accounts
+set balance = balance + @amt
+where accid = @toacctid 
+
+if @@rowcount = 0
+begin
+throw '50001,'Credit Failed',1'
+end
+
+commit;
+
+end try
+
+begin catch
+if @@transactioncount > 0
+rollback
+
+throw
+end catch
+
+end
+
+
+
+
+
+
+
+
+
+
+Scenario:
+take integer input from user
+create stored procedure to find the nth highest earning employee in each department using table variable
+
+emp(id,name,salary,dept)
+--------------------------
+
+create procedure rnk(@n int)
+as
+begin
+
+declare @RankEmp table
+(id int,name varchar(50),salary int,dept varchar(50),salrank int);
+
+insert into @RankEmp
+select id,
+       name,
+       salary,
+       dept,
+       DENSE_RANK() over (partition by dept order by salary desc) as salrank
+       from emp;
+
+select id,
+       name,
+       salary,
+       dept
+       from @RankEmp
+       where salrank = @n
+end;
+--------without using ranking function------------
+create procedure rnk(@n int)
+as
+begin
+
+declare @RankEmp table
+(id int,name varchar(50),salary int,dept varchar(50))
+
+insert into @RankEmp
+select e.id, e.name, e.salary, e.dept
+from emp e
+where @n - 1 = (select count(distinct salary)
+        from emp e2
+        where e2.dept = e.dept and e2.salary > e.salary)
+select * from @RankEmp;
+end;
+
+exec rnk 2
+
+----------------Using Top---------
+SELECT e.*
+    	FROM emp AS e
+   	WHERE e.salary = (
+        		SELECT TOP (1) s.salary
+        		FROM (
+            			SELECT DISTINCT TOP (@n_value) salary
+            			FROM emp
+            			WHERE dept = e.dept
+            			ORDER BY salary DESC
+        		) AS x
+        		ORDER BY x.salary ASC
+    	)
+   	ORDER BY e.dept, e.salary DESC;
+-------------OR---------------------
+create procedure dbo.sp_nth_highest_top
+(
+    @n int
+)
+as
+begin
+    set nocount on;
+
+    -- Result table variable (optional)
+    declare @Result table
+    (
+        id int,
+        name varchar(50),
+        salary int,
+        dept varchar(50)
+    );
+
+    -- Loop through each department
+    insert into @Result
+    select e.id, e.name, e.salary, e.dept
+    from emp e
+    where e.salary = 
+    (
+        select min(salary) 
+        from
+        (
+            select top (@n) salary
+            from emp e2
+            where e2.dept = e.dept
+            order by salary desc
+        ) as top_salaries
+    );
+
+    -- Return result
+    select * from @Result;
+end;
+
+
+
+Customer Order Summary (E-Commerce)
+
+Business Scenario
+
+For each customer:
+
+Total orders
+Total amount
+Average order value
+
+Logic involves aggregation + calculation
+ 
+Create a TVF to return customer order summary
+
+customerid as input
+
+table-order-ordered, customerid, orderamount
+
+return summary of amount of orders for each customer
+--------------
+create function getSummary(@customerid int)
+returns @ord table(customerid int, totalorders int, totalamount int, avgordervalue int)
+as
+begin
+
+insert into @ord
+select customerid, count(orderid) as totalorders, sum(orderamount) as totalamount, avg(orderamount) as avgordervalue
+from order
+where customerid = @customerid
+
+end
+
+select * from getSummary(100)
+---------------------
+create function getSummaryInline(@customerid int)
+returns table
+as
+return
+select customerid, count(orderid) as totalorders, sum(orderamount) as totalamount, avg(orderamount) as avgordervalue
+from orders
+where customerid = @customerid
+
+select * from getSummaryInline(100)
+-------------
+
+
+
+
+Business Scenario
+
+Reports are generated daily, weekly, monthly.
+
+Every report needs:
+Start date
+End date
+
+Question
+
+Create a reusable TVF that returns records between two dates.
+
+Orders(orderid,customerid,orderdate,totalamount)
+
+input start date, end date
+
+return order info for those orders in that range
+---------
+display custinfo as well, you have another table:
+
+customer(customerid, custname)
+---------
+
+create function reports(@stdate date,@enddate date)
+returns @result table(orderid int,customerid int,orderdate date,totalamount int)
+as
+begin
+
+insert into @result
+select orderid, o.customerid, o.orderdate, o.totalamount,c.custname
+from orders o
+join customer c
+on o.customerid = c.customerid
+where orderdate between @stdate and @enddate
+return
+end
+
+select * from reports('2025-01-01','2025-01-20')
+---
+create function reportsInline(@stdate date,@enddate date)
+returns table
+as
+select orderid, o.customerid, o.orderdate, o.totalamount,c.custname
+from orders o
+join customer c
+on o.customerid = c.customerid
+where orderdate between @stdate and @enddate
+-----------
+
