@@ -1,0 +1,86 @@
+--1) use emp-dept-sales tables. 
+
+--a) create view in order to get total_Sales done by each eid for permonth,peryear. 
+--   eid    ename    total_Sales   month    year 
+create view vw_emp_monthly_sales as
+select e.eid, e.ename, sum(s.amount) as total_sales, month(s.sale_date) as month, year(s.sale_date) as year
+from emp e
+join sales s on e.eid = s.eid
+group by e.eid, e.ename, year(s.sale_date), month(s.sale_date);
+
+--b) create view to get the count of employee for each location. 
+--location   count(employee) 
+CREATE VIEW vw_employee_count_by_location AS
+SELECT d.location, COUNT(e.eid) AS employee_count
+FROM dept d
+JOIN emp e ON d.deptid = e.deptid
+GROUP BY d.location;
+
+--c)create view in order to get total sales done by male and female employee in each quarter each year. 
+--      gender   total_sales   count(employees)   year   quarter 
+CREATE VIEW vw_gender_quarterly_sales AS
+SELECT e.gender, SUM(s.amount) AS total_sales, COUNT(DISTINCT e.eid) AS employee_count, YEAR(s.sale_date) AS year, DATEPART(QUARTER, s.sale_date) AS quarter
+FROM emp e
+JOIN sales s ON e.eid = s.eid
+GROUP BY e.gender, YEAR(s.sale_date), DATEPART(QUARTER, s.sale_date);
+
+
+ 
+
+--d) create view in order to find the sales done on weekdays and for weekends for male and female employee. 
+--gender    total_sales    count(employees)   weekday/weekend 
+CREATE VIEW vw_gender_weekday_weekend_sales AS
+SELECT e.gender, SUM(s.amount) AS total_sales, COUNT(DISTINCT e.eid) AS employee_count,
+    CASE
+        WHEN DATENAME(WEEKDAY, s.sale_date) IN ('Saturday', 'Sunday')
+        THEN 'Weekend'
+        ELSE 'Weekday'
+    END AS day_type
+FROM emp e
+JOIN sales s ON e.eid = s.eid
+GROUP BY e.gender,
+    CASE
+        WHEN DATENAME(WEEKDAY, s.sale_date) IN ('Saturday', 'Sunday')
+        THEN 'Weekend'
+        ELSE 'Weekday'
+    END; 
+
+ 
+
+--e) create view to see the  top 5 employee data based on current month sales. 
+CREATE VIEW vw_top5_current_month_sales AS
+SELECT TOP 5 e.eid, e.ename,SUM(s.amount) AS total_sales
+FROM emp e
+JOIN sales s ON e.eid = s.eid
+WHERE MONTH(s.sale_date) = MONTH(GETDATE()) AND YEAR(s.sale_date) = YEAR(GETDATE())
+GROUP BY e.eid, e.ename
+ORDER BY total_sales DESC;
+
+
+ 
+
+--f) create view to get the least 5 employees based on current month sales. 
+CREATE VIEW vw_least5_current_month_sales AS
+SELECT TOP 5 e.eid,e.ename,SUM(s.amount) AS total_sales
+FROM emp e
+JOIN sales s ON e.eid = s.eid
+WHERE MONTH(s.sale_date) = MONTH(GETDATE()) AND YEAR(s.sale_date) = YEAR(GETDATE())
+GROUP BY e.eid, e.ename
+ORDER BY total_sales ASC;
+
+
+--g) create view to get best employee in mail and female based on sales for current month. 
+CREATE VIEW vw_best_employee_by_gender_current_month AS
+SELECT *
+FROM (
+    SELECT e.gender,e.eid,e.ename,SUM(s.amount) AS total_sales,RANK() OVER (PARTITION BY e.gender ORDER BY SUM(s.amount) DESC
+        ) AS rnk
+    FROM emp e
+    JOIN sales s ON e.eid = s.eid
+    WHERE MONTH(s.sale_date) = MONTH(GETDATE()) AND YEAR(s.sale_date) = YEAR(GETDATE())
+    GROUP BY e.gender,e.eid,e.ename
+) x
+WHERE rnk = 1;
+
+
+
